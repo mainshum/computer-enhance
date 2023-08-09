@@ -1,4 +1,5 @@
 # assemble test.asm, creates test
+cd part1
 nasm test.asm
 # use sim to make temp asm file
 deno run --allow-read sim8086.ts test > my.asm

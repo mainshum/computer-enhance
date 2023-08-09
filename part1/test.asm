@@ -1,17 +1,20 @@
-bits 16
+; ========================================================================
+;
+; (C) Copyright 2023 by Molly Rocket, Inc., All Rights Reserved.
+;
+; This software is provided 'as-is', without any express or implied
+; warranty. In no event will the authors be held liable for any damages
+; arising from the use of this software.
+;
+; Please see https://computerenhance.com for further information
+;
+; ========================================================================
 
-; listing 38
-mov cx, bx
-mov ch, ah
-mov dx, bx
-mov si, bx
-mov bx, di
-mov al, cl
-mov ch, ch
-mov bx, ax
-mov bx, si
-mov sp, di
-mov bp, ax
+; ========================================================================
+; LISTING 39
+; ========================================================================
+
+bits 16
 
 ; Register-to-register
 mov si, bx
@@ -31,3 +34,7 @@ mov dx, -3948
 mov al, [bx + si]
 mov bx, [bp + di]
 mov dx, [bp]
+
+; Source address calculation plus 8-bit displacement
+mov ah, [bx + si + 4]
+

@@ -225,7 +225,10 @@ const main = (byteOffset: number): void => {
           }
 
           if (mod === "MemModDis0") {
-            sndOperand += "]";
+            sndOperand =
+              rm === "110"
+                ? `[${parseInt(padAndParse(bytePlus1), 2)}]`
+                : sndOperand + "]";
 
             console.log(
               dir === "1"
@@ -238,9 +241,11 @@ const main = (byteOffset: number): void => {
 
           // mod = 01
           // rm = 110 use 16 bit displacement
-          const bytePlus2 = padAndParse(byteAt(bytes, byteOffset + 2));
 
-          sndOperand = rm === "110" ? `[bp + ${bytePlus2}]` : `+ ${bytePlus2}]`;
+          sndOperand += `+ ${parseInt(
+            padAndParse(byteAt(bytes, byteOffset + 2)),
+            2
+          )}]`;
 
           console.log(
             dir === "1"
