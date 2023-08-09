@@ -80,16 +80,17 @@ const mnemoInstructionMap: Record<string, InstrEncoding> = {
   "10001100": "segmentToReg",
 };
 
-const padAndParse = (byte: number) => byte.toString(2).padStart(8, "0");
+const padAndParse = (byte: number, padLen: number) =>
+  byte.toString(2).padStart(padLen, "0");
 
 const classifyInstr = (byte: number): InstrEncoding => {
-  const binaryStr = padAndParse(byte);
+  const binaryStr = padAndParse(byte, 8);
 
   const matches = Object.entries(mnemoInstructionMap).filter(
     ([k, v]) => binaryStr.substr(0, k.length) === k
   );
 
-  if (matches.length === 0) throw Error("no match");
+  if (matches.length === 0) throw Error(`no match for ${binaryStr}`);
 
   if (matches.length > 1) throw Error("too many matches");
 
@@ -106,7 +107,7 @@ const modMap: Record<string, Mod> = {
 };
 
 const classifyMod = (byte: number): Mod => {
-  const binaryStr = padAndParse(byte).substring(0, 2);
+  const binaryStr = padAndParse(byte, 8).substring(0, 2);
   const match = modMap[binaryStr];
 
   if (!match) {
@@ -135,13 +136,19 @@ const ThreeBit = z.union([
 ]);
 
 const readBitFromByte = (byte: number, bitNo: number): z.infer<typeof Bit> =>
-  Bit.parse(padAndParse(byte).substring(bitNo, bitNo + 1));
+  Bit.parse(padAndParse(byte, 8).substring(bitNo, bitNo + 1));
 
 const byteAt = (ar: Uint8Array, ind: number): number => {
   const retval = ar.at(ind);
   if (retval == undefined) throw new Error(`No value at ${ind}`);
 
   return retval;
+};
+
+const parseInt16 = (binary: string) => {
+  if (binary.length !== 16) throw Error("string needs to have len 16");
+
+  return parseInt(binary, 2);
 };
 
 const main = (byteOffset: number): void => {
@@ -156,8 +163,8 @@ const main = (byteOffset: number): void => {
     // deno-lint-ignore no-fallthrough
     case "regToFromReg": {
       const mod = classifyMod(bytePlus1);
-      const reg = padAndParse(bytePlus1).substring(2, 5);
-      const rm = ThreeBit.parse(padAndParse(bytePlus1).substring(5, 8));
+      const reg = padAndParse(bytePlus1, 8).substring(2, 5);
+      const rm = ThreeBit.parse(padAndParse(bytePlus1, 8).substring(5, 8));
 
       const w = readBitFromByte(byte, 7);
       const dir = readBitFromByte(byte, 6);
@@ -227,9 +234,15 @@ const main = (byteOffset: number): void => {
 
           // mod = 00
           if (mod === "MemModDis0") {
+            const newOffset = rm === "110" ? byteOffset + 4 : byteOffset + 2;
+
             sndOperand =
               rm === "110"
-                ? `[${parseInt(padAndParse(bytePlus1), 2)}]`
+                ? `[${parseInt16(
+                    padAndParse(byteAt(bytes, byteOffset + 3), 8).concat(
+                      padAndParse(byteAt(bytes, byteOffset + 2), 8)
+                    )
+                  )}]`
                 : sndOperand + "]";
 
             console.log(
@@ -238,20 +251,20 @@ const main = (byteOffset: number): void => {
                 : `mov ${sndOperand}, ${regDec}`
             );
 
-            return main(byteOffset + 2);
+            return main(newOffset);
           }
 
           const newOffset =
             mod === "MemModeDis8" ? byteOffset + 3 : byteOffset + 4;
 
-          const bytePlus2 = padAndParse(byteAt(bytes, byteOffset + 2));
-
           const offsetBytes =
             mod === "MemModeDis8"
-              ? bytePlus2
-              : padAndParse(byteAt(bytes, byteOffset + 3)).concat(bytePlus2);
+              ? padAndParse(byteAt(bytes, byteOffset + 2), 16)
+              : padAndParse(byteAt(bytes, byteOffset + 3), 8).concat(
+                  padAndParse(byteAt(bytes, byteOffset + 2), 8)
+                );
 
-          sndOperand += `+ ${parseInt(offsetBytes, 2)}]`;
+          sndOperand += `+ ${parseInt16(offsetBytes)}]`;
 
           console.log(
             dir === "1"
@@ -271,13 +284,15 @@ const main = (byteOffset: number): void => {
 
     case "immediateToReg": {
       const w = readBitFromByte(byte, 4);
-      const reg = padAndParse(byte).substring(5, 8);
+      const reg = padAndParse(byte, 8).substring(5, 8);
       const bytePlus2 = byteAt(bytes, byteOffset + 2);
 
       const data =
         w === "0"
           ? bytePlus1
-          : parseInt(padAndParse(bytePlus2).concat(padAndParse(bytePlus1)), 2);
+          : parseInt16(
+              padAndParse(bytePlus2, 8).concat(padAndParse(bytePlus1, 8))
+            );
 
       const offset = w === "0" ? 2 : 3;
 
