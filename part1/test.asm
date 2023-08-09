@@ -53,4 +53,8 @@ bits 16
  
  ; Direct address
 mov bp, [5]
-; mov bx, [3458]
+mov bx, [3458]
+
+; Memory-to-accumulator test
+mov ax, [2555]
+mov ax, [16]

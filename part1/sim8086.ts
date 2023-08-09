@@ -300,6 +300,25 @@ const main = (byteOffset: number): void => {
 
       return main(byteOffset + offset);
     }
+
+    case "memToAcc": {
+      const w = readBitFromByte(byte, 7);
+      const accReg = "ax";
+      const useHigh = w === "1";
+
+      const addrLo = bytePlus1;
+      const addHigh = byteAt(bytes, byteOffset + 2);
+      const newOffset = (byteOffset + (useHigh ? 3 : 2)) as number;
+
+      const mem = useHigh
+        ? padAndParse(addHigh, 8).concat(padAndParse(addrLo, 8))
+        : padAndParse(addrLo, 16);
+
+      console.log(`mov ${accReg}, [${parseInt16(mem)}]`);
+
+      return main(newOffset);
+    }
+
     default:
       throw Error(`unhandled instruction: ${instr}`);
   }
