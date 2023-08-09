@@ -179,7 +179,8 @@ const main = (byteOffset: number): void => {
         }
 
         case "MemModDis0":
-        case "MemModeDis8": {
+        case "MemModeDis8":
+        case "MemModeDis16": {
           // memory mode - rm dictates how the effective address is calculated
 
           let sndOperand: string;
@@ -224,6 +225,7 @@ const main = (byteOffset: number): void => {
             }
           }
 
+          // mod = 00
           if (mod === "MemModDis0") {
             sndOperand =
               rm === "110"
@@ -240,10 +242,25 @@ const main = (byteOffset: number): void => {
           }
 
           // mod = 01
-          // rm = 110 use 16 bit displacement
+          if (mod === "MemModeDis8") {
+            sndOperand += `+ ${parseInt(
+              padAndParse(byteAt(bytes, byteOffset + 2)),
+              2
+            )}]`;
+
+            console.log(
+              dir === "1"
+                ? `mov ${regDec}, ${sndOperand}`
+                : `mov ${sndOperand}, ${regDec}`
+            );
+
+            return main(byteOffset + 3);
+          }
 
           sndOperand += `+ ${parseInt(
-            padAndParse(byteAt(bytes, byteOffset + 2)),
+            padAndParse(byteAt(bytes, byteOffset + 3)).concat(
+              padAndParse(byteAt(bytes, byteOffset + 2))
+            ),
             2
           )}]`;
 
@@ -253,7 +270,7 @@ const main = (byteOffset: number): void => {
               : `mov ${sndOperand}, ${regDec}`
           );
 
-          return main(byteOffset + 3);
+          return main(byteOffset + 4);
         }
 
         // mod = 01
