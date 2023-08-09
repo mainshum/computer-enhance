@@ -301,7 +301,8 @@ const main = (byteOffset: number): void => {
       return main(byteOffset + offset);
     }
 
-    case "memToAcc": {
+    case "memToAcc":
+    case "accToMem": {
       const w = readBitFromByte(byte, 7);
       const accReg = "ax";
       const useHigh = w === "1";
@@ -314,7 +315,12 @@ const main = (byteOffset: number): void => {
         ? padAndParse(addHigh, 8).concat(padAndParse(addrLo, 8))
         : padAndParse(addrLo, 16);
 
-      console.log(`mov ${accReg}, [${parseInt16(mem)}]`);
+      const output =
+        instr === "memToAcc"
+          ? `mov ${accReg}, [${parseInt16(mem)}]`
+          : `mov [${parseInt16(mem)}], ${accReg}`;
+
+      console.log(output);
 
       return main(newOffset);
     }
