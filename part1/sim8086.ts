@@ -241,28 +241,17 @@ const main = (byteOffset: number): void => {
             return main(byteOffset + 2);
           }
 
-          // mod = 01
-          if (mod === "MemModeDis8") {
-            sndOperand += `+ ${parseInt(
-              padAndParse(byteAt(bytes, byteOffset + 2)),
-              2
-            )}]`;
+          const newOffset =
+            mod === "MemModeDis8" ? byteOffset + 3 : byteOffset + 4;
 
-            console.log(
-              dir === "1"
-                ? `mov ${regDec}, ${sndOperand}`
-                : `mov ${sndOperand}, ${regDec}`
-            );
+          const bytePlus2 = padAndParse(byteAt(bytes, byteOffset + 2));
 
-            return main(byteOffset + 3);
-          }
+          const offsetBytes =
+            mod === "MemModeDis8"
+              ? bytePlus2
+              : padAndParse(byteAt(bytes, byteOffset + 3)).concat(bytePlus2);
 
-          sndOperand += `+ ${parseInt(
-            padAndParse(byteAt(bytes, byteOffset + 3)).concat(
-              padAndParse(byteAt(bytes, byteOffset + 2))
-            ),
-            2
-          )}]`;
+          sndOperand += `+ ${parseInt(offsetBytes, 2)}]`;
 
           console.log(
             dir === "1"
@@ -270,7 +259,7 @@ const main = (byteOffset: number): void => {
               : `mov ${sndOperand}, ${regDec}`
           );
 
-          return main(byteOffset + 4);
+          return main(newOffset);
         }
 
         // mod = 01
